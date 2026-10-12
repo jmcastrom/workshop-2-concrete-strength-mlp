@@ -31,3 +31,6 @@ desktop.ini
 *.tmp
 *.log
 *~
+
+# Copia ejecutada que genera el comando de nbclient del README
+ejecutado.ipynb

@@ -13,16 +13,45 @@ SciPy · Matplotlib · Jupyter.
 
 ## Contenido
 
+- [Estructura del repositorio](#estructura-del-repositorio)
 - [Resumen de resultados](#resumen-de-resultados)
 - [El problema y los datos](#el-problema-y-los-datos)
 - [Metodología](#metodología)
 - [Resultados](#resultados)
-- [Ejecución local](#ejecución-local)
+- [Ejecución local (Windows)](#ejecución-local-windows)
 - [Ejecución en Google Colab](#ejecución-en-google-colab)
 - [Submission de Kaggle](#submission-de-kaggle)
-- [Organización del repositorio](#organización-del-repositorio)
 - [Reproducibilidad y limitaciones](#reproducibilidad-y-limitaciones)
 - [Uso académico](#uso-académico)
+
+## Estructura del repositorio
+
+```text
+workshop-2-concrete-strength-mlp/
+├── README.md
+├── Taller2_Regresion_Concreto_MLP.ipynb   # notebook principal, ejecutado y con sus salidas
+├── submission.csv                         # predicciones del modelo final sobre data/test.csv
+├── requirements.txt                       # dependencias con las versiones validadas
+├── .gitignore
+├── .gitattributes                         # conserva los CSV byte a byte (sin conversión de finales de línea)
+└── data/
+    ├── train.csv                          # datos etiquetados (originales, sin modificar)
+    ├── test.csv                           # datos a predecir (originales, sin modificar)
+    └── sample_submission.csv              # plantilla de Kaggle (original, sin modificar)
+```
+
+| Archivo | Propósito |
+|---|---|
+| `Taller2_Regresion_Concreto_MLP.ipynb` | Notebook del taller, **ejecutado** de principio a fin con un kernel nuevo. Conserva sus salidas, tablas y figuras reales. |
+| `data/train.csv`, `data/test.csv`, `data/sample_submission.csv` | Datos originales de la competencia, sin modificar. |
+| `submission.csv` | Predicciones del modelo final sobre `data/test.csv`. El notebook la genera en la raíz del repositorio. |
+| `requirements.txt` | Dependencias con las versiones con las que se validó el notebook. |
+| `.gitignore` | Excluye entornos virtuales, cachés, checkpoints, secretos y archivos temporales. |
+| `.gitattributes` | Evita que Git convierta los finales de línea (los CSV usan CRLF) para que los datos se publiquen idénticos. |
+
+Los notebooks de referencia de la clase (`01_mnist.ipynb`, `02_asl.ipynb`), que el enunciado propone como punto de
+partida, no forman parte de este repositorio: son material del curso y el notebook del taller no los necesita para
+ejecutarse.
 
 ## Resumen de resultados
 
@@ -32,20 +61,20 @@ SciPy · Matplotlib · Jupyter.
 | Regresión lineal con variables transformadas (*baseline*) | 51.77 | 0.812 |
 | **MLP seleccionada** (`log1p(age)` + *weight decay* 10⁻³) | **23.87 ± 0.66** | **0.913** |
 
-Las cifras son medias (± desviación estándar) sobre una **validación cruzada de 5 folds** dentro de `train.csv`. **No
-son el puntaje de Kaggle** ni garantizan el desempeño sobre datos nuevos; el puntaje público todavía está
+Las cifras son medias (± desviación estándar) de una **validación cruzada de 5 folds** dentro de `data/train.csv`.
+**No son el puntaje de Kaggle** ni garantizan el desempeño sobre datos nuevos. El puntaje público todavía está
 [pendiente](#submission-de-kaggle).
 
 ## El problema y los datos
 
-El objetivo es predecir `csMPa` (resistencia a la compresión, MPa), una variable continua: es un problema de
+El objetivo es predecir `csMPa` (resistencia a la compresión, en MPa), una variable continua: es un problema de
 **regresión**. La métrica oficial de la competencia es el **MSE** (MPa²); menor es mejor.
 
 | Archivo | Dimensiones | Papel |
 |---|---|---|
-| `train.csv` | 721 filas × 10 columnas | Datos etiquetados: predictores + `csMPa`. Se usan para todo el entrenamiento y la validación. |
-| `test.csv` | 309 filas × 9 columnas | Mismos predictores, sin `csMPa`. Sólo se usa para generar las predicciones finales. |
-| `sample_submission.csv` | 10 filas × 2 columnas | Plantilla de Kaggle: define las columnas `Row ID,csMPa`. Sus 10 filas tienen identificadores de *train*, así que **no** fija el número de filas de la submission (ver [Submission de Kaggle](#submission-de-kaggle)). |
+| `data/train.csv` | 721 filas × 10 columnas | Datos etiquetados: predictores + `csMPa`. Se usan para todo el entrenamiento y la validación. |
+| `data/test.csv` | 309 filas × 9 columnas | Mismos predictores, sin `csMPa`. Sólo se usa para generar las predicciones finales. |
+| `data/sample_submission.csv` | 10 filas × 2 columnas | Plantilla de Kaggle: define las columnas `Row ID,csMPa`. Sus 10 filas tienen identificadores de *train*, así que **no** fija el número de filas de la submission (ver [Submission de Kaggle](#submission-de-kaggle)). |
 
 | Columna | Descripción | Unidad |
 |---|---|---|
@@ -61,7 +90,7 @@ El objetivo es predecir `csMPa` (resistencia a la compresión, MPa), una variabl
 | `csMPa` | **Objetivo:** resistencia a la compresión (sólo en train) | MPa |
 
 **`Row ID` no se usa como predictor.** Es un identificador secuencial sin relación con la resistencia (correlación
-≈ −0.02 en train); se conserva únicamente para identificar las predicciones de test.
+≈ −0.02 en train); se conserva sólo para identificar las predicciones de test.
 
 Características relevantes encontradas en el EDA:
 - Todas las variables son numéricas, sin valores faltantes ni infinitos, y con escalas muy distintas.
@@ -113,15 +142,15 @@ Todo lo descrito aquí está implementado en
 9. **Selección:** menor MSE de validación cruzada, con una **regla de 1 error estándar pareado** que prefiere la opción
    más simple cuando la diferencia está dentro del ruido entre folds.
 10. **Modelo final y submission.**
-    - Reentrenamiento con todo `train.csv` durante un número de épocas derivado de los folds (mediana de los pasos de
-      optimización óptimos).
-    - Predicción sobre `test.csv` con el mismo preprocesamiento.
-    - Escritura y validación de `submission.csv`.
+    - Reentrenamiento con todo `data/train.csv` durante un número de épocas derivado de los folds (mediana de los
+      pasos de optimización óptimos).
+    - Predicción sobre `data/test.csv` con el mismo preprocesamiento.
+    - Escritura y validación de `submission.csv` en la raíz del repositorio.
 
 ## Resultados
 
-Validación cruzada de 5 folds sobre las 705 filas únicas de `train.csv`. El MSE se reporta como media ± desviación
-estándar entre folds; RMSE, MAE y R² son medias entre folds.
+Validación cruzada de 5 folds sobre las 705 filas únicas de `data/train.csv`. El MSE se reporta como media ±
+desviación estándar entre folds; RMSE, MAE y R² son medias entre folds.
 
 | Configuración | MSE (MPa²) | RMSE (MPa) | MAE (MPa) | R² |
 |---|---|---|---|---|
@@ -157,11 +186,11 @@ con las mismas variables transformadas: su ventaja viene de la no linealidad, no
 
 **Validación cruzada frente a evaluación externa.** La validación cruzada es una estimación **interna** y algo
 optimista, porque la configuración se eligió entre 10 redes con esos mismos folds. La única estimación independiente
-es el puntaje de Kaggle sobre `test.csv`, que todavía no se ha obtenido.
+es el puntaje de Kaggle sobre `data/test.csv`, que todavía no se ha obtenido.
 
-## Ejecución local
+## Ejecución local (Windows)
 
-Probado en **Windows con Python 3.12.6**, en CPU. Desde la carpeta del repositorio, en **PowerShell**:
+Probado en **Windows con Python 3.12.6**, en CPU, desde la raíz del repositorio clonado. En **PowerShell**:
 
 ```powershell
 git clone https://github.com/jmcastrom/workshop-2-concrete-strength-mlp.git
@@ -176,16 +205,20 @@ code .
 En VS Code (con las extensiones de Python y Jupyter):
 1. Abrir `Taller2_Regresion_Concreto_MLP.ipynb`.
 2. **Select Kernel → Python Environments → `.venv`**.
-3. **Restart → Run All.** El notebook mide e imprime sus tiempos; en la máquina de validación (CPU), cada
-   ejecución completa tardó entre 2 y 4 minutos (138–206 s en cuatro ejecuciones).
-4. Al terminar, `submission.csv` queda en la misma carpeta que el notebook.
+3. **Restart → Run All.** El notebook lee los CSV desde `data/` y mide e imprime sus tiempos. En la máquina de
+   validación (CPU), cada ejecución completa tardó entre 2 y 4 minutos (116–206 s en cinco ejecuciones).
+4. Al terminar, `submission.csv` queda en la **raíz del repositorio**.
 
-Para ejecutarlo sin abrir VS Code (por ejemplo, para comprobar que corre de principio a fin):
+Para ejecutarlo sin abrir VS Code (por ejemplo, para comprobar que corre de principio a fin), desde la raíz del
+repositorio:
 
 ```powershell
 python -m pip install nbclient
 python -c "import nbformat; from nbclient import NotebookClient; nb = nbformat.read('Taller2_Regresion_Concreto_MLP.ipynb', as_version=4); NotebookClient(nb, timeout=None, kernel_name='python3').execute(); nbformat.write(nb, 'ejecutado.ipynb'); print('OK')"
 ```
+
+Este comando guarda la copia ejecutada como `ejecutado.ipynb` (no se versiona; puede borrarse) y regenera
+`submission.csv`.
 
 **Linux/macOS (no probado):** los pasos equivalentes son `python3.12 -m venv .venv`, `source .venv/bin/activate` y
 `python -m pip install -r requirements.txt`. En Linux, `torch` desde PyPI descarga por defecto una versión con soporte
@@ -197,63 +230,73 @@ CUDA; para una instalación sólo CPU puede usarse el índice oficial de PyTorch
 
 ## Ejecución en Google Colab
 
-La compatibilidad con Colab y Google Drive **está implementada, pero no se ha validado en una sesión real de
-Colab**.
+La compatibilidad con Colab y Google Drive **está implementada en el código, pero no se ha probado en una sesión real
+de Colab**. Lo único probado es la ejecución local en Windows.
 
-1. Abrir el notebook en Colab con [este enlace](https://colab.research.google.com/github/jmcastrom/workshop-2-concrete-strength-mlp/blob/main/Taller2_Regresion_Concreto_MLP.ipynb), o con **Archivo → Abrir cuaderno → GitHub** y la URL
-   del repositorio. Al abrirlo así, los CSV **no** están en `/content`: la celda 1.1 montará Drive y, si no encuentra
-   la carpeta, abrirá el selector para subir `train.csv`, `test.csv` y `sample_submission.csv`.
-   Otra opción es subir la carpeta del repositorio a Google Drive y abrir el notebook desde allí; si la carpeta no se
-   llama `taller2-machine-learning-main`, hay que poner su ruta en `CARPETA_DRIVE`.
-2. *(Opcional)* **Entorno de ejecución → Cambiar tipo de entorno → GPU**; el código también funciona en CPU.
-3. **Entorno de ejecución → Reiniciar y ejecutar todo.**
+1. Abrir el notebook en Colab con
+   [este enlace](https://colab.research.google.com/github/jmcastrom/workshop-2-concrete-strength-mlp/blob/main/Taller2_Regresion_Concreto_MLP.ipynb),
+   o con **Archivo → Abrir cuaderno → GitHub** y la URL del repositorio. Abierto así, el notebook no trae la carpeta
+   `data/`: la celda 1.1 montará Drive y, si no encuentra la carpeta del proyecto, abrirá un selector para subir los
+   tres CSV.
+2. Alternativa: subir la carpeta completa del repositorio (con `data/`) a *Mi unidad* de Google Drive y abrir el
+   notebook desde allí.
+3. *(Opcional)* **Entorno de ejecución → Cambiar tipo de entorno → GPU**; el código también funciona en CPU.
+4. **Entorno de ejecución → Reiniciar y ejecutar todo.**
 
-La celda **1.1** localiza los CSV sola, en este orden:
-1. Carpeta actual, `taller2-machine-learning-main/`, `/content` y `/content/data`.
-2. Sólo en Colab: monta Google Drive y busca `CARPETA_DRIVE` y cualquier carpeta `taller2-machine-learning-main`
-   ubicada un nivel por debajo de *Mi unidad*.
+La celda **1.1** localiza los CSV sola. Recorre estas carpetas raíz y, en cada una, busca primero `data/` y luego la
+propia raíz:
+1. Carpeta actual, `workshop-2-concrete-strength-mlp/`, `taller2-machine-learning-main/` y `/content`.
+2. Sólo en Colab: monta Google Drive y busca `CARPETA_DRIVE` y cualquier carpeta con uno de esos dos nombres en
+   *Mi unidad* o un nivel más abajo.
 3. Sólo en Colab: si tampoco los encuentra, abre un selector para subirlos.
 
 | Variable (celda 1.1) | Valor por defecto | Uso |
 |---|---|---|
-| `CARPETA_DRIVE` | `/content/drive/MyDrive/taller2-machine-learning-main` | Única ruta editable: carpeta de Drive con los CSV. Cambiarla si se subió a otra ubicación. |
-| `ARCHIVOS` | `["train.csv", "test.csv", "sample_submission.csv"]` | Archivos que deben estar juntos en una misma carpeta. |
-| `USAR_DRIVE` | — | **Ya no existe** en el código: el montaje de Drive es automático sólo cuando se ejecuta en Colab y los CSV no están en `/content`. |
+| `CARPETA_DRIVE` | `/content/drive/MyDrive/workshop-2-concrete-strength-mlp` | Única ruta editable: carpeta del proyecto en Drive. Cambiarla si se subió con otro nombre o en otra ubicación. |
+| `ARCHIVOS` | `["train.csv", "test.csv", "sample_submission.csv"]` | Archivos que deben estar juntos en una misma carpeta (normalmente `data/`). |
+| `NOMBRES_PROYECTO` | `["workshop-2-concrete-strength-mlp", "taller2-machine-learning-main"]` | Nombres de carpeta del proyecto que se buscan automáticamente. |
 
-Tanto en local como en Colab, `submission.csv` se escribe en la misma carpeta donde se encontraron los CSV.
+`USAR_DRIVE` ya no existe en el código: Drive sólo se monta en Colab y sólo si los CSV no se encontraron antes. En
+local nunca se intenta montar Drive. `submission.csv` se escribe siempre en la raíz del proyecto (la carpeta que
+contiene `data/`), o en `/content` si los CSV se subieron sueltos.
 
 ## Submission de Kaggle
 
-- **Archivo:** [`submission.csv`](submission.csv), generado por el notebook con el modelo seleccionado (E7).
-- **Formato:** columnas `Row ID,csMPa`, las de la plantilla, con 309 filas, una por cada fila de `test.csv`, en el
+- **Archivo:** [`submission.csv`](submission.csv), en la raíz del repositorio, generado por el notebook con el modelo
+  seleccionado (E7).
+- **Formato:** columnas `Row ID,csMPa`, las de la plantilla, con 309 filas, una por cada fila de `data/test.csv`, en el
   mismo orden (`Row ID` 721–1029). Predicciones en MPa, finitas, entre 4.84 y 73.91.
-- **Validación:** la celda 10.3 del notebook valida la submission en memoria, la escribe, la relee desde el disco y
+- **Validación en el notebook:** la celda 10.3 valida la submission en memoria, la escribe, la relee desde el disco y
   comprueba columnas, número de filas, identificadores, orden, valores finitos y que el contenido sea exactamente el
   de las predicciones del modelo.
+- **Comprobación rápida desde la terminal** (con el entorno activado, desde la raíz del repositorio):
+
+  ```powershell
+  python -c "import pandas as pd, numpy as np; s = pd.read_csv('submission.csv'); t = pd.read_csv('data/test.csv'); print(s.shape, list(s.columns), 'IDs = test:', bool((s['Row ID'].values == t['Row ID'].values).all()), 'finitas:', bool(np.isfinite(s['csMPa']).all()))"
+  ```
+
+  Resultado esperado: `(309, 2) ['Row ID', 'csMPa'] IDs = test: True finitas: True`.
 - **Formato oficial:** **no se ha confirmado** en la página de Kaggle. La plantilla local sólo tiene 10 filas con
   identificadores de train, así que el número de filas y los identificadores esperados deben comprobarse en la
   competencia antes de enviar. Por eso `FORMATO_KAGGLE_CONFIRMADO = False` en el notebook.
 - **Puntaje público:** **pendiente.** El archivo aún no se ha enviado a Kaggle. Este repositorio no contiene ningún
   puntaje ni captura del leaderboard.
 
-## Organización del repositorio
-
-| Archivo | Propósito |
-|---|---|
-| `Taller2_Regresion_Concreto_MLP.ipynb` | Notebook principal del taller, **ejecutado** de principio a fin con un kernel nuevo; conserva sus salidas, tablas y figuras reales. |
-| `train.csv`, `test.csv`, `sample_submission.csv` | Datos originales de la competencia, sin modificar. |
-| `submission.csv` | Predicciones del modelo final sobre `test.csv`, generadas por el notebook. |
-| `01_mnist.ipynb` | Notebook de referencia de clase (clasificación de MNIST con PyTorch): estructura `nn.Sequential`, Adam y funciones `train()`/`validate()`. Sin modificar. |
-| `02_asl.ipynb` | Notebook de referencia de clase (datos tabulares ASL): `Dataset` propio, `DataLoader` y ciclo de entrenamiento. Sin modificar. |
-| `requirements.txt` | Dependencias con las versiones con las que se validó el notebook. |
-| `.gitignore` | Excluye entornos virtuales, cachés, checkpoints, secretos y archivos temporales. |
+**Pasos para enviarla a Kaggle:**
+1. Abrir la [competencia](https://www.kaggle.com/competitions/concrete-strength-regression), iniciar sesión y, si se
+   pide, aceptar sus reglas.
+2. En **Overview → Evaluation** y en **Data**, confirmar que se esperan las columnas `Row ID,csMPa` y 309 filas con
+   `Row ID` del 721 al 1029. Si no coincide, no enviar el archivo.
+3. Pulsar **Submit Prediction** (o la opción equivalente de la interfaz actual), seleccionar `submission.csv` de la raíz
+   del repositorio y enviarlo.
+4. En la pestaña **Submissions**, esperar a que termine la evaluación y anotar el **Public Score** (MSE en MPa²).
 
 ## Reproducibilidad y limitaciones
 
 **Reproducibilidad.**
 - Todas las particiones, inicializaciones y órdenes de *batches* derivan de `SEED = 42`.
-- En CPU, con las versiones de `requirements.txt`, tres ejecuciones completas independientes produjeron métricas
-  idénticas y el mismo `submission.csv`.
+- En CPU, con las versiones de `requirements.txt`, varias ejecuciones completas independientes produjeron métricas
+  idénticas y el mismo `submission.csv`, byte a byte.
 - El notebook incluye un `MODO_RAPIDO` para una prueba de humo de pocos minutos; sus resultados **no** son válidos y,
   en ese modo, el notebook no escribe `submission.csv`.
 
@@ -271,8 +314,6 @@ Tanto en local como en Colab, `submission.csv` se escribe en la misma carpeta do
 
 ## Uso académico
 
-Repositorio de un trabajo académico, publicado para su revisión. Los datos provienen de la competencia de Kaggle
-indicada arriba, y su uso está sujeto a las reglas de esa competencia. Los notebooks `01_mnist.ipynb` y
-`02_asl.ipynb` son material de referencia del curso: conservan su encabezado original de licencia (código Apache 2.0
-y texto CC BY 4.0, © NVIDIA Corporation & Affiliates). El repositorio no declara una licencia propia para el resto del
-contenido.
+Repositorio de un trabajo académico, publicado para su revisión. Los datos de `data/` provienen de la competencia de
+Kaggle indicada arriba, y su uso está sujeto a las reglas de esa competencia. El repositorio no declara una licencia
+propia.
