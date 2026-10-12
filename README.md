@@ -15,6 +15,7 @@ SciPy · Matplotlib · Jupyter.
 
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Resumen de resultados](#resumen-de-resultados)
+- [Evidencia de evaluación en Kaggle](#evidencia-de-evaluación-en-kaggle)
 - [El problema y los datos](#el-problema-y-los-datos)
 - [Metodología](#metodología)
 - [Resultados](#resultados)
@@ -34,10 +35,14 @@ workshop-2-concrete-strength-mlp/
 ├── requirements.txt                       # dependencias con las versiones validadas
 ├── .gitignore
 ├── .gitattributes                         # conserva los CSV byte a byte (sin conversión de finales de línea)
-└── data/
-    ├── train.csv                          # datos etiquetados (originales, sin modificar)
-    ├── test.csv                           # datos a predecir (originales, sin modificar)
-    └── sample_submission.csv              # plantilla de Kaggle (original, sin modificar)
+├── data/
+│   ├── train.csv                          # datos etiquetados (originales, sin modificar)
+│   ├── test.csv                           # datos a predecir (originales, sin modificar)
+│   └── sample_submission.csv              # plantilla de Kaggle (original, sin modificar)
+└── docs/
+    └── evidence/
+        ├── screenshot01.png               # Kaggle: listado de envíos y Public Score
+        └── screenshot02.png               # Kaggle: detalle del envío
 ```
 
 | Archivo | Propósito |
@@ -48,6 +53,7 @@ workshop-2-concrete-strength-mlp/
 | `requirements.txt` | Dependencias con las versiones con las que se validó el notebook. |
 | `.gitignore` | Excluye entornos virtuales, cachés, checkpoints, secretos y archivos temporales. |
 | `.gitattributes` | Evita que Git convierta los finales de línea (los CSV usan CRLF) para que los datos se publiquen idénticos. |
+| `docs/evidence/screenshot01.png`, `docs/evidence/screenshot02.png` | Capturas originales de la evaluación en Kaggle (ver [Evidencia de evaluación en Kaggle](#evidencia-de-evaluación-en-kaggle)). |
 
 Los notebooks de referencia de la clase (`01_mnist.ipynb`, `02_asl.ipynb`), que el enunciado propone como punto de
 partida, no forman parte de este repositorio: son material del curso y el notebook del taller no los necesita para
@@ -62,8 +68,48 @@ ejecutarse.
 | **MLP seleccionada** (`log1p(age)` + *weight decay* 10⁻³) | **23.87 ± 0.66** | **0.913** |
 
 Las cifras son medias (± desviación estándar) de una **validación cruzada de 5 folds** dentro de `data/train.csv`.
-**No son el puntaje de Kaggle** ni garantizan el desempeño sobre datos nuevos. El puntaje público todavía está
-[pendiente](#submission-de-kaggle).
+**No son el puntaje de Kaggle** ni garantizan el desempeño sobre datos nuevos. La evaluación externa en Kaggle
+(Public Score 24.81485) se presenta por separado en la sección siguiente.
+
+## Evidencia de evaluación en Kaggle
+
+El archivo [`submission.csv`](submission.csv) de este repositorio se envió a la competencia
+[Concrete Strength - Regression](https://www.kaggle.com/competitions/concrete-strength-regression). Es una evaluación
+**externa y complementaria** a la validación cruzada: se calcula sobre `data/test.csv`, que no participó en ninguna
+decisión del notebook.
+
+| Concepto | Valor |
+|---|---|
+| Archivo enviado | `submission.csv` |
+| Descripción del envío | "MLP en PyTorch con transformacion log1p(age) y weight decay" |
+| Estado mostrado por Kaggle | `Complete (after deadline)` |
+| **Public Score** | **24.81485** |
+| Métrica | MSE (MPa²); un valor menor es mejor |
+
+**Interpretación.** El Public Score equivale a un RMSE ≈ 4.98 MPa. Es 0.95 MPa² (≈ 4 %) mayor que el MSE de validación
+cruzada del modelo seleccionado (23.87 ± 0.66 MPa²). Es una diferencia pequeña y en la dirección esperada, porque la
+estimación interna es algo optimista: la configuración se eligió entre 10 con los mismos folds. No es una métrica de
+validación cruzada ni sustituye la tabla de [Resultados](#resultados): es una única medición externa, que confirma el
+orden de magnitud del error estimado.
+
+**Nota sobre el estado del envío.**
+- El envío se procesó **después de la fecha límite** de la competencia (`Complete (after deadline)`).
+- La página de envíos muestra **0/2** envíos seleccionados para la evaluación final, y la casilla de selección de este
+  envío está sin marcar.
+- El panel de detalle también muestra "Private score: 24.81485" para este envío. Por ser un envío posterior al cierre
+  y no seleccionado, no se presenta como puntaje final del equipo ni como posición en el leaderboard.
+
+**Capturas:**
+
+1. [`docs/evidence/screenshot01.png`](docs/evidence/screenshot01.png): listado de envíos (*Submissions*), con el
+   estado del envío y su Public Score.
+
+   ![Listado de envíos de Kaggle: submission.csv, Complete (after deadline), Public Score 24.81485 y 0/2 envíos seleccionados](docs/evidence/screenshot01.png)
+
+2. [`docs/evidence/screenshot02.png`](docs/evidence/screenshot02.png): detalle del envío (*Submission Details*), con
+   el archivo, el estado, la puntuación y el control para seleccionarlo para la evaluación final.
+
+   ![Detalle del envío de Kaggle: archivo submission.csv, estado, puntuación y casilla de selección para la evaluación final](docs/evidence/screenshot02.png)
 
 ## El problema y los datos
 
@@ -186,7 +232,8 @@ con las mismas variables transformadas: su ventaja viene de la no linealidad, no
 
 **Validación cruzada frente a evaluación externa.** La validación cruzada es una estimación **interna** y algo
 optimista, porque la configuración se eligió entre 10 redes con esos mismos folds. La única estimación independiente
-es el puntaje de Kaggle sobre `data/test.csv`, que todavía no se ha obtenido.
+es la de Kaggle sobre `data/test.csv`: Public Score de 24.81485 MPa², ligeramente peor que la validación cruzada (ver
+[Evidencia de evaluación en Kaggle](#evidencia-de-evaluación-en-kaggle)).
 
 ## Ejecución local (Windows)
 
@@ -276,13 +323,14 @@ contiene `data/`), o en `/content` si los CSV se subieron sueltos.
   ```
 
   Resultado esperado: `(309, 2) ['Row ID', 'csMPa'] IDs = test: True finitas: True`.
-- **Formato oficial:** **no se ha confirmado** en la página de Kaggle. La plantilla local sólo tiene 10 filas con
-  identificadores de train, así que el número de filas y los identificadores esperados deben comprobarse en la
-  competencia antes de enviar. Por eso `FORMATO_KAGGLE_CONFIRMADO = False` en el notebook.
-- **Puntaje público:** **pendiente.** El archivo aún no se ha enviado a Kaggle. Este repositorio no contiene ningún
-  puntaje ni captura del leaderboard.
+- **Formato oficial: confirmado.** La página de la competencia indica las columnas `Row ID` y `csMPa`, y Kaggle
+  procesó y puntuó este mismo archivo de 309 filas. Por eso `FORMATO_KAGGLE_CONFIRMADO = True` en el notebook. La
+  plantilla local `data/sample_submission.csv` sólo tiene 10 filas con identificadores de train y no sirve para fijar
+  el número de filas.
+- **Evaluación:** enviado a Kaggle, estado `Complete (after deadline)`, **Public Score 24.81485** (ver
+  [Evidencia de evaluación en Kaggle](#evidencia-de-evaluación-en-kaggle)).
 
-**Pasos para enviarla a Kaggle:**
+**Cómo se envió (y cómo repetir el envío):**
 1. Abrir la [competencia](https://www.kaggle.com/competitions/concrete-strength-regression), iniciar sesión y, si se
    pide, aceptar sus reglas.
 2. En **Overview → Evaluation** y en **Data**, confirmar que se esperan las columnas `Row ID,csMPa` y 309 filas con
