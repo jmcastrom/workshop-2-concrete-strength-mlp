@@ -1,0 +1,33 @@
+# Entornos virtuales
+.venv/
+.venv-*/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secretos y configuración privada
+.env
+.env.*
+kaggle.json
+*.pem
+*.key
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporales
+*.tmp
+*.log
+*~

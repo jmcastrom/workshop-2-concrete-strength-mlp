@@ -1,0 +1,3 @@
+# Guardar todos los archivos byte a byte, sin convertir finales de línea (CRLF/LF).
+# Los CSV originales usan CRLF y deben conservar exactamente su contenido (y su hash) en el repositorio.
+* -text
