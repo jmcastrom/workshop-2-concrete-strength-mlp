@@ -6,7 +6,7 @@ compresión del concreto** (`csMPa`, en MPa) a partir de la dosificación de la 
 corresponde a la competencia de Kaggle
 [Concrete Strength Regression](https://www.kaggle.com/competitions/concrete-strength-regression).
 
-**Integrantes (según el notebook):** Equipo 3 — Jorge Andrés Durán y Juan Miguel Castro.
+**Integrantes:** Equipo 3 — Jorge Andrés Durán y Juan Miguel Castro.
 
 **Tecnologías:** Python 3.12 · PyTorch · pandas · NumPy · scikit-learn (preprocesamiento y *baselines*) ·
 SciPy · Matplotlib · Jupyter.
